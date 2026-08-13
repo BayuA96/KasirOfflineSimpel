@@ -2,13 +2,41 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Viewport disesuaikan untuk Android: mencegah zoom saat tap input -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kasir UMKM - Offline First Mini POS</title>
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Library Scan Barcode/QR via Kamera -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
+    /* CSS Khusus Optimasi Perangkat Mobile Android */
+    body {
+      -webkit-tap-highlight-color: transparent; /* Menghilangkan highlight biru saat tap di Android */
+    }
+
+    /* Mencegah auto-zoom browser Android pada input text/number */
+    @media (max-width: 768px) {
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
+
+    /* Menyesuaikan area bawah untuk Gesture Navigation Bar Android */
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 1rem);
+    }
+
+    /* Custom Scrollbar agar rapi di HP */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
     /* CSS Khusus untuk Cetak Struk */
     @media print {
       body * {
@@ -21,7 +49,7 @@
         position: absolute;
         left: 0;
         top: 0;
-        width: 80mm; /* Standar Lebar Kertas Struk Thermal */
+        width: 80mm;
         font-family: monospace;
         font-size: 12px;
         color: black;
@@ -32,66 +60,70 @@
     }
   </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen">
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col justify-between">
 
-  <!-- Header Navigasi -->
-  <header class="bg-indigo-600 text-white p-4 shadow-md no-print">
-    <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold flex items-center gap-2">
-        <span>🛒</span> Kasir UMKM
-      </h1>
-      <nav class="flex gap-2">
-        <button onclick="switchTab('kasir')" id="tab-kasir" class="px-4 py-2 bg-indigo-700 rounded-lg font-medium hover:bg-indigo-800 transition">Kasir</button>
-        <button onclick="switchTab('produk')" id="tab-produk" class="px-4 py-2 bg-indigo-500 rounded-lg font-medium hover:bg-indigo-800 transition">Produk</button>
-        <button onclick="switchTab('rekap')" id="tab-rekap" class="px-4 py-2 bg-indigo-500 rounded-lg font-medium hover:bg-indigo-800 transition">Rekap Penjualan</button>
+  <!-- Header Navigasi Sticky -->
+  <header class="bg-indigo-600 text-white p-3 sm:p-4 shadow-md sticky top-0 z-40 no-print">
+    <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center justify-between w-full sm:w-auto">
+        <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2">
+          <span>🛒</span> Kasir UMKM
+        </h1>
+      </div>
+      <!-- Tab Bar Responsif Android -->
+      <nav class="flex w-full sm:w-auto gap-1 bg-indigo-800/40 p-1 rounded-xl text-xs sm:text-sm">
+        <button onclick="switchTab('kasir')" id="tab-kasir" class="flex-1 sm:flex-none px-3 py-2 bg-indigo-700 rounded-lg font-medium transition text-center">Kasir</button>
+        <button onclick="switchTab('produk')" id="tab-produk" class="flex-1 sm:flex-none px-3 py-2 bg-indigo-500 rounded-lg font-medium transition text-center">Produk</button>
+        <button onclick="switchTab('rekap')" id="tab-rekap" class="flex-1 sm:flex-none px-3 py-2 bg-indigo-500 rounded-lg font-medium transition text-center">Rekap</button>
       </nav>
     </div>
   </header>
 
   <!-- Konten Utama -->
-  <main class="container mx-auto p-4 no-print">
+  <main class="container mx-auto p-2 sm:p-4 flex-1 no-print pb-safe">
     
     <!-- TAB 1: HALAMAN KASIR -->
-    <section id="page-kasir" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <section id="page-kasir" class="flex flex-col lg:grid lg:grid-cols-3 gap-4">
       <!-- Daftar Produk & Scanner -->
-      <div class="md:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-        <div class="mb-4 flex gap-2">
-          <input type="text" id="search-product" onkeyup="renderProducts()" onkeydown="handleBarcodeScanner(event)" placeholder="🔍 Cari nama / scan barcode di sini..." class="w-full p-2.5 border rounded-lg focus:outline-indigo-500 text-sm">
-          <button onclick="openScannerModal('kasir')" class="bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2 whitespace-nowrap text-sm">
-            📷 Scan Barcode
+      <div class="lg:col-span-2 bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200">
+        <div class="mb-3 flex gap-2">
+          <input type="text" id="search-product" onkeyup="renderProducts()" onkeydown="handleBarcodeScanner(event)" placeholder="🔍 Cari nama / scan barcode..." class="w-full p-2.5 border rounded-lg focus:outline-indigo-500 text-sm">
+          <button onclick="openScannerModal('kasir')" class="bg-indigo-600 text-white px-3 sm:px-4 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm active:scale-95">
+            📷 <span class="hidden sm:inline">Scan Barcode</span>
           </button>
         </div>
-        <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[70vh] overflow-y-auto p-1">
-          <!-- Produk akan dimasukkan via JavaScript -->
+        <!-- Grid Produk Fleksibel Android -->
+        <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-2.5 max-h-[50vh] lg:max-h-[70vh] overflow-y-auto p-1">
+          <!-- Produk dimasukkan via JS -->
         </div>
       </div>
 
       <!-- Keranjang & Pembayaran -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between h-[75vh]">
+      <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between min-h-[350px] lg:h-[75vh]">
         <div>
-          <h2 class="text-lg font-bold border-b pb-2 mb-3">Keranjang Belanja</h2>
-          <div id="cart-list" class="space-y-3 overflow-y-auto max-h-[35vh] pr-1">
-            <p class="text-gray-400 text-center py-8">Keranjang masih kosong</p>
+          <h2 class="text-base sm:text-lg font-bold border-b pb-2 mb-2">Keranjang Belanja</h2>
+          <div id="cart-list" class="space-y-2.5 overflow-y-auto max-h-[25vh] lg:max-h-[35vh] pr-1">
+            <p class="text-gray-400 text-center py-6 text-sm">Keranjang masih kosong</p>
           </div>
         </div>
 
         <!-- Ringkasan Pembayaran -->
-        <div class="border-t pt-3 space-y-2">
-          <div class="flex justify-between font-bold text-lg">
+        <div class="border-t pt-3 space-y-2 mt-4">
+          <div class="flex justify-between font-bold text-base sm:text-lg">
             <span>Total:</span>
             <span id="cart-total" class="text-indigo-600">Rp 0</span>
           </div>
 
-          <div class="space-y-2 pt-2">
+          <div class="space-y-2 pt-1">
             <div>
-              <label class="text-xs text-gray-500">Jumlah Uang Diterima (Rp)</label>
-              <input type="number" id="cash-amount" oninput="calculateChange()" placeholder="0" class="w-full p-2 border rounded-lg text-right font-semibold focus:outline-indigo-500">
+              <label class="text-xs text-gray-500 font-medium">Uang Diterima (Rp)</label>
+              <input type="number" id="cash-amount" oninput="calculateChange()" placeholder="0" class="w-full p-2.5 border rounded-lg text-right font-semibold focus:outline-indigo-500">
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs sm:text-sm">
               <span>Kembalian:</span>
               <span id="cash-change" class="font-semibold text-gray-700">Rp 0</span>
             </div>
-            <button onclick="processCheckout()" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition">
+            <button onclick="processCheckout()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition active:scale-98 text-sm sm:text-base shadow-sm">
               Bayar & Cetak Struk
             </button>
           </div>
@@ -100,140 +132,131 @@
     </section>
 
     <!-- TAB 2: MANAJEMEN PRODUK -->
-    <section id="page-produk" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6">
+    <section id="page-produk" class="hidden flex flex-col lg:grid lg:grid-cols-3 gap-4">
       <!-- Form Tambah/Edit Produk -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-        <h2 class="text-lg font-bold border-b pb-2 mb-4">Tambah Produk Baru</h2>
-        <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
+      <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200">
+        <h2 class="text-base sm:text-lg font-bold border-b pb-2 mb-3">Tambah Produk Baru</h2>
+        <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3">
           <div>
-            <label class="text-sm font-medium">Kode Barcode / SKU</label>
+            <label class="text-xs sm:text-sm font-medium">Kode Barcode / SKU</label>
             <div class="flex gap-2 mt-1">
               <input type="text" id="prod-barcode" placeholder="Opsional / Scan Kode" class="w-full p-2 border rounded-lg focus:outline-indigo-500 text-sm">
-              <button type="button" onclick="openScannerModal('form')" class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg font-semibold hover:bg-indigo-200 transition text-sm">
+              <button type="button" onclick="openScannerModal('form')" class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg font-semibold hover:bg-indigo-200 transition text-xs whitespace-nowrap active:scale-95">
                 📷 Scan
               </button>
             </div>
           </div>
           <div>
-            <label class="text-sm font-medium">Nama Produk</label>
+            <label class="text-xs sm:text-sm font-medium">Nama Produk</label>
             <input type="text" id="prod-name" required class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="text-sm font-medium">Harga Modal (Rp)</label>
+              <label class="text-xs sm:text-sm font-medium">Harga Modal (Rp)</label>
               <input type="number" id="prod-cost" required min="0" placeholder="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
             </div>
             <div>
-              <label class="text-sm font-medium">Harga Jual (Rp)</label>
+              <label class="text-xs sm:text-sm font-medium">Harga Jual (Rp)</label>
               <input type="number" id="prod-price" required min="0" placeholder="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
             </div>
           </div>
           <div>
-            <label class="text-sm font-medium">Stok Awal</label>
+            <label class="text-xs sm:text-sm font-medium">Stok Awal</label>
             <input type="number" id="prod-stock" required min="0" placeholder="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
           </div>
-          <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition">
+          <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition active:scale-98 text-sm">
             Simpan Produk
           </button>
         </form>
       </div>
 
-      <!-- Tabel Daftar Produk -->
-      <div class="md:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-gray-200 overflow-x-auto space-y-4">
-        <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
-          <h2 class="text-lg font-bold">Daftar Produk</h2>
-          <!-- Kolom Pencarian Produk di Tabel Manajemen Produk -->
+      <!-- Tabel Daftar Produk (Scrollable Horizontal di HP) -->
+      <div class="lg:col-span-2 bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
+          <h2 class="text-base sm:text-lg font-bold">Daftar Produk</h2>
           <div class="w-full sm:w-64">
-            <input type="text" id="search-product-list" onkeyup="renderProductTable()" placeholder="🔍 Cari di daftar produk..." class="w-full p-2 border rounded-lg text-sm focus:outline-indigo-500">
+            <input type="text" id="search-product-list" onkeyup="renderProductTable()" placeholder="🔍 Cari produk..." class="w-full p-2 border rounded-lg text-xs sm:text-sm focus:outline-indigo-500">
           </div>
         </div>
 
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-gray-50 border-b text-sm text-gray-600">
-              <th class="p-2">Barcode</th>
-              <th class="p-2">Nama</th>
-              <th class="p-2">Modal</th>
-              <th class="p-2">Harga Jual</th>
-              <th class="p-2">Stok</th>
-              <th class="p-2 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="product-table-body" class="divide-y text-sm">
-            <!-- Data produk dimasukkan via JS -->
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[500px]">
+            <thead>
+              <tr class="bg-gray-50 border-b text-xs sm:text-sm text-gray-600">
+                <th class="p-2">Barcode</th>
+                <th class="p-2">Nama</th>
+                <th class="p-2">Modal</th>
+                <th class="p-2">Harga Jual</th>
+                <th class="p-2">Stok</th>
+                <th class="p-2 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="product-table-body" class="divide-y text-xs sm:text-sm">
+              <!-- Data produk dimasukkan via JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
     <!-- TAB 3: REKAP PENJUALAN -->
     <section id="page-rekap" class="hidden space-y-4">
-      <!-- Filter Tanggal & Ringkasan Omset -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4">
-        <!-- Filter Form -->
-        <div class="flex flex-wrap items-end justify-between gap-4 border-b pb-4">
-          <div class="flex flex-wrap items-center gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1">Dari Tanggal</label>
-              <input type="date" id="filter-start-date" class="p-2 border rounded-lg text-sm focus:outline-indigo-500">
+      <!-- Filter Tanggal & Ringkasan -->
+      <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b pb-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-[11px] font-semibold text-gray-600 mb-1">Dari Tanggal</label>
+              <input type="date" id="filter-start-date" class="w-full p-2 border rounded-lg text-xs focus:outline-indigo-500">
             </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1">Sampai Tanggal</label>
-              <input type="date" id="filter-end-date" class="p-2 border rounded-lg text-sm focus:outline-indigo-500">
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-[11px] font-semibold text-gray-600 mb-1">Sampai Tanggal</label>
+              <input type="date" id="filter-end-date" class="w-full p-2 border rounded-lg text-xs focus:outline-indigo-500">
             </div>
-            <div class="flex gap-2">
-              <button onclick="applyDateFilter()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition self-end">
-                Filter
-              </button>
-              <button onclick="resetDateFilter()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition self-end">
-                Reset Filter
-              </button>
+            <div class="flex gap-1 w-full sm:w-auto mt-2 sm:mt-0">
+              <button onclick="applyDateFilter()" class="flex-1 sm:flex-none bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-indigo-700 transition active:scale-95">Filter</button>
+              <button onclick="resetDateFilter()" class="flex-1 sm:flex-none bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium hover:bg-gray-300 transition active:scale-95">Reset</button>
             </div>
           </div>
 
-          <!-- Tombol Aksi -->
-          <div class="flex gap-2">
-            <button onclick="exportToCSV()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition">
-              Export CSV / Excel
-            </button>
-            <button onclick="clearSalesHistory()" class="bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-rose-600 transition">
-              Reset Data Transaksi
-            </button>
+          <div class="flex gap-2 w-full md:w-auto">
+            <button onclick="exportToCSV()" class="flex-1 md:flex-none bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-emerald-700 transition active:scale-95 text-center">Export CSV</button>
+            <button onclick="clearSalesHistory()" class="flex-1 md:flex-none bg-rose-500 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-rose-600 transition active:scale-95 text-center">Reset Data</button>
           </div>
         </div>
 
-        <!-- Info Ringkasan Penjualan & Laba Hasil Filter -->
-        <div class="flex justify-between items-center flex-wrap gap-4">
+        <!-- Info Ringkasan Penjualan -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h2 class="text-lg font-bold text-gray-800">Ringkasan Penjualan</h2>
-            <p class="text-xs text-gray-500" id="filter-status-label">Menampilkan seluruh data penjualan</p>
+            <h2 class="text-base sm:text-lg font-bold text-gray-800">Ringkasan Penjualan</h2>
+            <p class="text-[11px] text-gray-500" id="filter-status-label">Menampilkan seluruh data penjualan</p>
           </div>
-          <div class="flex flex-wrap gap-6">
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-6 w-full sm:w-auto bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-lg">
             <div>
-              <span class="text-xs text-gray-500 block">Total Transaksi</span>
-              <span id="total-count" class="font-bold text-indigo-600 text-lg">0</span>
+              <span class="text-[10px] sm:text-xs text-gray-500 block">Total Transaksi</span>
+              <span id="total-count" class="font-bold text-indigo-600 text-sm sm:text-lg">0</span>
             </div>
             <div>
-              <span class="text-xs text-gray-500 block">Total Omset</span>
-              <span id="total-omset" class="font-bold text-gray-800 text-lg">Rp 0</span>
+              <span class="text-[10px] sm:text-xs text-gray-500 block">Total Omset</span>
+              <span id="total-omset" class="font-bold text-gray-800 text-sm sm:text-lg">Rp 0</span>
             </div>
             <div>
-              <span class="text-xs text-gray-500 block">Total Modal</span>
-              <span id="total-cost" class="font-bold text-gray-500 text-lg">Rp 0</span>
+              <span class="text-[10px] sm:text-xs text-gray-500 block">Total Modal</span>
+              <span id="total-cost" class="font-bold text-gray-500 text-sm sm:text-lg">Rp 0</span>
             </div>
             <div>
-              <span class="text-xs text-gray-500 block">Total Laba Bersih</span>
-              <span id="total-profit" class="font-bold text-emerald-600 text-lg">Rp 0</span>
+              <span class="text-[10px] sm:text-xs text-gray-500 block">Total Laba Bersih</span>
+              <span id="total-profit" class="font-bold text-emerald-600 text-sm sm:text-lg">Rp 0</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Tabel Data Penjualan -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+      <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[650px]">
           <thead>
-            <tr class="bg-gray-50 border-b text-sm text-gray-600">
+            <tr class="bg-gray-50 border-b text-xs sm:text-sm text-gray-600">
               <th class="p-2">ID Transaksi</th>
               <th class="p-2">Waktu</th>
               <th class="p-2">Item</th>
@@ -244,7 +267,7 @@
               <th class="p-2">Kembali</th>
             </tr>
           </thead>
-          <tbody id="sales-table-body" class="divide-y text-sm">
+          <tbody id="sales-table-body" class="divide-y text-xs sm:text-sm">
             <!-- Data transaksi dimasukkan via JS -->
           </tbody>
         </table>
@@ -252,13 +275,13 @@
     </section>
   </main>
 
-  <!-- MODAL SCANNER KAMERA -->
-  <div id="scanner-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 no-print">
-    <div class="bg-white p-5 rounded-2xl max-w-sm w-full space-y-4 text-center">
-      <h3 class="text-lg font-bold text-gray-800">Scan Barcode / QR Code</h3>
-      <div id="reader" class="overflow-hidden rounded-lg bg-black min-h-[250px]"></div>
-      <p class="text-xs text-gray-500">Arahkan kamera ke arah kode barcode produk</p>
-      <button onclick="closeScannerModal()" class="w-full bg-rose-500 text-white py-2 rounded-lg font-semibold hover:bg-rose-600 transition">
+  <!-- MODAL SCANNER KAMERA (Optimized untuk Mobile) -->
+  <div id="scanner-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-3 no-print">
+    <div class="bg-white p-4 rounded-2xl max-w-sm w-full space-y-3 text-center shadow-2xl">
+      <h3 class="text-base font-bold text-gray-800">Scan Barcode / QR Code</h3>
+      <div id="reader" class="overflow-hidden rounded-xl bg-black min-h-[220px]"></div>
+      <p class="text-[11px] text-gray-500">Arahkan kamera HP ke kode barcode produk</p>
+      <button onclick="closeScannerModal()" class="w-full bg-rose-500 text-white py-2.5 rounded-xl font-semibold hover:bg-rose-600 transition active:scale-98 text-sm">
         Tutup Kamera
       </button>
     </div>
@@ -300,9 +323,9 @@
     let sales = JSON.parse(localStorage.getItem('pos_sales')) || [];
     let filteredSales = []; 
     let html5QrcodeScanner = null;
-    let currentScannerTarget = 'kasir'; // 'kasir' atau 'form'
+    let currentScannerTarget = 'kasir';
 
-    // --- FUNGSI SUARA BEEP (Web Audio API) ---
+    // --- FUNGSI SUARA BEEP ---
     function playBeep() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -310,14 +333,14 @@
         const gainNode = audioCtx.createGain();
 
         oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime); // Frekuensi 1000 Hz
-        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); // Volume 15%
+        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
 
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
 
         oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.15); // Durasi beep 0.15 detik
+        oscillator.stop(audioCtx.currentTime + 0.15);
       } catch (e) {
         console.log("Audio Context Error:", e);
       }
@@ -351,7 +374,7 @@
       html5QrcodeScanner = new Html5Qrcode("reader");
       html5QrcodeScanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 150 } },
+        { fps: 10, qrbox: { width: 220, height: 140 } },
         onScanSuccess
       ).catch(err => {
         alert("Gagal membuka kamera: " + err);
@@ -395,7 +418,6 @@
       }
     }
 
-    // Barcode Scanner Fisik (USB/Wireless Scanner menangkap tombol 'Enter')
     function handleBarcodeScanner(e) {
       if (e.key === 'Enter') {
         const query = e.target.value.trim();
@@ -427,7 +449,7 @@
       );
 
       if (filtered.length === 0) {
-        container.innerHTML = '<p class="col-span-full text-center text-gray-400 py-8">Produk tidak ditemukan</p>';
+        container.innerHTML = '<p class="col-span-full text-center text-gray-400 py-6 text-xs sm:text-sm">Produk tidak ditemukan</p>';
         return;
       }
 
@@ -435,10 +457,10 @@
         const isOutOfStock = product.stock <= 0;
         const card = document.createElement('div');
         
-        card.className = `p-3 border rounded-xl cursor-pointer transition flex flex-col justify-between ${
+        card.className = `p-2.5 sm:p-3 border rounded-xl cursor-pointer transition flex flex-col justify-between active:scale-95 select-none ${
           isOutOfStock 
-            ? 'bg-rose-50 border-rose-200 hover:border-rose-400 hover:shadow-md' 
-            : 'bg-white hover:shadow-md hover:border-indigo-300'
+            ? 'bg-rose-50 border-rose-200' 
+            : 'bg-white hover:border-indigo-300'
         }`;
         
         card.onclick = () => {
@@ -452,17 +474,17 @@
         card.innerHTML = `
           <div>
             <div class="flex justify-between items-start gap-1">
-              <h3 class="font-bold text-gray-800 ${isOutOfStock ? 'text-rose-800' : ''}">${product.name}</h3>
-              ${isOutOfStock ? '<span class="text-[10px] font-bold bg-rose-500 text-white px-1.5 py-0.5 rounded">HABIS</span>' : ''}
+              <h3 class="font-bold text-xs sm:text-sm text-gray-800 leading-tight ${isOutOfStock ? 'text-rose-800' : ''}">${product.name}</h3>
+              ${isOutOfStock ? '<span class="text-[9px] font-bold bg-rose-500 text-white px-1 py-0.5 rounded">HABIS</span>' : ''}
             </div>
-            <p class="text-[11px] text-gray-400 font-mono">${product.barcode || 'Tanpa Barcode'}</p>
-            <p class="text-xs ${isOutOfStock ? 'text-rose-600 font-medium mt-1' : 'text-gray-500'}">
-              Stok: ${product.stock} ${isOutOfStock ? '(Klik untuk +Stok)' : ''}
+            <p class="text-[10px] text-gray-400 font-mono mt-0.5">${product.barcode || '-'}</p>
+            <p class="text-[11px] ${isOutOfStock ? 'text-rose-600 font-medium' : 'text-gray-500'} mt-1">
+              Stok: ${product.stock}
             </p>
           </div>
           <div class="mt-2 flex justify-between items-center">
-            <span class="font-semibold text-indigo-600">${formatRupiah(product.price)}</span>
-            ${isOutOfStock ? '<span class="text-xs bg-emerald-600 text-white px-2 py-1 rounded font-semibold hover:bg-emerald-700">+ Tambah Stok</span>' : ''}
+            <span class="font-semibold text-xs sm:text-sm text-indigo-600">${formatRupiah(product.price)}</span>
+            ${isOutOfStock ? '<span class="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-semibold">+ Stok</span>' : ''}
           </div>
         `;
         container.appendChild(card);
@@ -473,20 +495,18 @@
       const product = products.find(p => p.id === productId);
       if (!product) return;
 
-      const input = prompt(`Stok "${product.name}" saat ini habis (0).\nMasukkan jumlah stok baru yang ingin ditambahkan:`, '10');
+      const input = prompt(`Stok "${product.name}" habis.\nMasukkan jumlah stok tambahan:`, '10');
       
       if (input !== null) {
         const addedQty = parseInt(input);
         if (!isNaN(addedQty) && addedQty > 0) {
           product.stock += addedQty;
           localStorage.setItem('pos_products', JSON.stringify(products));
-          
-          alert(`Berhasil menambahkan ${addedQty} stok untuk ${product.name}! Stok sekarang: ${product.stock}`);
-          
+          alert(`Berhasil menambahkan ${addedQty} stok untuk ${product.name}!`);
           renderProducts();
           renderProductTable();
         } else if (input.trim() !== '') {
-          alert('Jumlah stok tidak valid! Harap masukkan angka bulat positif.');
+          alert('Jumlah stok tidak valid!');
         }
       }
     }
@@ -529,7 +549,7 @@
       container.innerHTML = '';
 
       if (cart.length === 0) {
-        container.innerHTML = '<p class="text-gray-400 text-center py-8">Keranjang masih kosong</p>';
+        container.innerHTML = '<p class="text-gray-400 text-center py-6 text-xs sm:text-sm">Keranjang masih kosong</p>';
         document.getElementById('cart-total').innerText = 'Rp 0';
         calculateChange();
         return;
@@ -541,16 +561,16 @@
         total += subtotal;
 
         const el = document.createElement('div');
-        el.className = 'flex justify-between items-center text-sm border-b pb-2';
+        el.className = 'flex justify-between items-center text-xs sm:text-sm border-b pb-2';
         el.innerHTML = `
           <div>
-            <div class="font-medium">${item.name}</div>
-            <div class="text-xs text-gray-500">${formatRupiah(item.price)} x ${item.qty}</div>
+            <div class="font-medium text-gray-800">${item.name}</div>
+            <div class="text-[11px] text-gray-500">${formatRupiah(item.price)} x ${item.qty}</div>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 bg-gray-200 rounded font-bold hover:bg-gray-300">-</button>
-            <span class="font-semibold">${item.qty}</span>
-            <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 bg-gray-200 rounded font-bold hover:bg-gray-300">+</button>
+          <div class="flex items-center gap-1.5">
+            <button onclick="updateCartQty(${item.id}, -1)" class="w-7 h-7 bg-gray-200 rounded-lg font-bold active:bg-gray-300 flex items-center justify-center text-sm">-</button>
+            <span class="font-semibold px-1 text-xs">${item.qty}</span>
+            <button onclick="updateCartQty(${item.id}, 1)" class="w-7 h-7 bg-gray-200 rounded-lg font-bold active:bg-gray-300 flex items-center justify-center text-sm">+</button>
           </div>
         `;
         container.appendChild(el);
@@ -599,21 +619,17 @@
         change: cash - total
       };
 
-      // Potong Stok
       cart.forEach(cartItem => {
         const product = products.find(p => p.id === cartItem.id);
         if (product) product.stock -= cartItem.qty;
       });
 
-      // Simpan Transaksi & Update LocalStorage
       sales.unshift(transaction);
       localStorage.setItem('pos_products', JSON.stringify(products));
       localStorage.setItem('pos_sales', JSON.stringify(sales));
 
-      // Cetak Struk
       printReceipt(transaction);
 
-      // Reset Form Kasir
       cart = [];
       document.getElementById('cash-amount').value = '';
       renderCart();
@@ -655,7 +671,7 @@
       const stock = parseInt(document.getElementById('prod-stock').value);
 
       if (barcode && products.some(p => p.barcode === barcode)) {
-        return alert('Barcode ini sudah terdaftar pada produk lain!');
+        return alert('Barcode ini sudah terdaftar!');
       }
 
       const newProduct = { id: Date.now(), barcode, name, cost, price, stock };
@@ -697,21 +713,21 @@
         const tr = document.createElement('tr');
         tr.className = isOutOfStock ? 'bg-rose-50/50' : '';
         tr.innerHTML = `
-          <td class="p-2 font-mono text-xs text-gray-500">${p.barcode || '-'}</td>
+          <td class="p-2 font-mono text-[11px] text-gray-500">${p.barcode || '-'}</td>
           <td class="p-2 font-medium">
             ${p.name}
-            ${isOutOfStock ? '<span class="ml-2 text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.5 rounded">Habis</span>' : ''}
+            ${isOutOfStock ? '<span class="ml-1 text-[9px] bg-rose-500 text-white font-bold px-1 py-0.5 rounded">Habis</span>' : ''}
           </td>
           <td class="p-2 text-gray-500">${formatRupiah(p.cost || 0)}</td>
           <td class="p-2 font-semibold text-gray-800">${formatRupiah(p.price)}</td>
           <td class="p-2">
             <span class="font-semibold ${isOutOfStock ? 'text-rose-600' : 'text-gray-800'}">${p.stock}</span>
           </td>
-          <td class="p-2 text-center flex justify-center items-center gap-2">
-            <button onclick="promptAddStock(${p.id})" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2.5 py-1 rounded font-semibold text-xs transition">
+          <td class="p-2 text-center flex justify-center items-center gap-1">
+            <button onclick="promptAddStock(${p.id})" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded font-semibold text-xs transition">
               + Stok
             </button>
-            <button onclick="deleteProduct(${p.id})" class="text-rose-500 hover:text-rose-700 font-semibold text-xs px-2 py-1">
+            <button onclick="deleteProduct(${p.id})" class="text-rose-500 hover:text-rose-700 font-semibold text-xs px-1.5 py-1">
               Hapus
             </button>
           </td>
@@ -720,13 +736,13 @@
       });
     }
 
-    // --- LOGIKA REKAP PENJUALAN & FILTER TANGGAL ---
+    // --- LOGIKA REKAP PENJUALAN ---
     function applyDateFilter() {
       const startInput = document.getElementById('filter-start-date').value;
       const endInput = document.getElementById('filter-end-date').value;
 
       if (!startInput && !endInput) {
-        alert('Silakan pilih rentang tanggal terlebih dahulu!');
+        alert('Pilih rentang tanggal terlebih dahulu!');
         return;
       }
 
@@ -774,7 +790,6 @@
       let totalProfit = 0;
 
       list.forEach(s => {
-        // Fallback hitung modal dan laba jika data transaksi lama belum memiliki properti cost/profit
         const trxCost = s.cost !== undefined ? s.cost : s.items.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0);
         const trxProfit = s.profit !== undefined ? s.profit : (s.total - trxCost);
 
@@ -787,7 +802,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="p-2 font-medium">${s.id}</td>
-          <td class="p-2 text-gray-500 text-xs">${s.date}</td>
+          <td class="p-2 text-gray-500 text-[11px]">${s.date}</td>
           <td class="p-2">${itemsText}</td>
           <td class="p-2 font-semibold text-gray-800">${formatRupiah(s.total)}</td>
           <td class="p-2 text-gray-500">${formatRupiah(trxCost)}</td>
@@ -807,7 +822,7 @@
     function exportToCSV() {
       const dataToExport = filteredSales.length > 0 ? filteredSales : sales;
 
-      if (dataToExport.length === 0) return alert('Belum ada data penjualan untuk diexport!');
+      if (dataToExport.length === 0) return alert('Belum ada data penjualan!');
 
       let csv = 'ID Transaksi,Waktu,Detail Item,Total Omset,Total Modal,Laba Bersih,Bayar,Kembali\n';
       dataToExport.forEach(s => {
@@ -826,7 +841,7 @@
     }
 
     function clearSalesHistory() {
-      if (confirm('Apakah Anda yakin ingin menghapus SELURUH riwayat transaksi? Data tidak bisa dikembalikan.')) {
+      if (confirm('Yakin ingin menghapus SELURUH riwayat transaksi?')) {
         sales = [];
         filteredSales = [];
         localStorage.removeItem('pos_sales');
