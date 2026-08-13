@@ -118,13 +118,19 @@
             <label class="text-sm font-medium">Nama Produk</label>
             <input type="text" id="prod-name" required class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
           </div>
-          <div>
-            <label class="text-sm font-medium">Harga (Rp)</label>
-            <input type="number" id="prod-price" required min="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-sm font-medium">Harga Modal (Rp)</label>
+              <input type="number" id="prod-cost" required min="0" placeholder="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
+            </div>
+            <div>
+              <label class="text-sm font-medium">Harga Jual (Rp)</label>
+              <input type="number" id="prod-price" required min="0" placeholder="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
+            </div>
           </div>
           <div>
             <label class="text-sm font-medium">Stok Awal</label>
-            <input type="number" id="prod-stock" required min="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
+            <input type="number" id="prod-stock" required min="0" placeholder="0" class="w-full p-2 border rounded-lg mt-1 focus:outline-indigo-500 text-sm">
           </div>
           <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition">
             Simpan Produk
@@ -147,7 +153,8 @@
             <tr class="bg-gray-50 border-b text-sm text-gray-600">
               <th class="p-2">Barcode</th>
               <th class="p-2">Nama</th>
-              <th class="p-2">Harga</th>
+              <th class="p-2">Modal</th>
+              <th class="p-2">Harga Jual</th>
               <th class="p-2">Stok</th>
               <th class="p-2 text-center">Aksi</th>
             </tr>
@@ -195,20 +202,28 @@
           </div>
         </div>
 
-        <!-- Info Ringkasan Omset Hasil Filter -->
-        <div class="flex justify-between items-center flex-wrap gap-2">
+        <!-- Info Ringkasan Penjualan & Laba Hasil Filter -->
+        <div class="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h2 class="text-lg font-bold text-gray-800">Ringkasan Penjualan</h2>
             <p class="text-xs text-gray-500" id="filter-status-label">Menampilkan seluruh data penjualan</p>
           </div>
-          <div class="flex gap-6">
+          <div class="flex flex-wrap gap-6">
             <div>
               <span class="text-xs text-gray-500 block">Total Transaksi</span>
               <span id="total-count" class="font-bold text-indigo-600 text-lg">0</span>
             </div>
             <div>
               <span class="text-xs text-gray-500 block">Total Omset</span>
-              <span id="total-omset" class="font-bold text-emerald-600 text-lg">Rp 0</span>
+              <span id="total-omset" class="font-bold text-gray-800 text-lg">Rp 0</span>
+            </div>
+            <div>
+              <span class="text-xs text-gray-500 block">Total Modal</span>
+              <span id="total-cost" class="font-bold text-gray-500 text-lg">Rp 0</span>
+            </div>
+            <div>
+              <span class="text-xs text-gray-500 block">Total Laba Bersih</span>
+              <span id="total-profit" class="font-bold text-emerald-600 text-lg">Rp 0</span>
             </div>
           </div>
         </div>
@@ -222,7 +237,9 @@
               <th class="p-2">ID Transaksi</th>
               <th class="p-2">Waktu</th>
               <th class="p-2">Item</th>
-              <th class="p-2">Total</th>
+              <th class="p-2">Total Omset</th>
+              <th class="p-2">Total Modal</th>
+              <th class="p-2">Laba Bersih</th>
               <th class="p-2">Bayar</th>
               <th class="p-2">Kembali</th>
             </tr>
@@ -274,9 +291,9 @@
   <script>
     // Initial State Data (Offline-First menggunakan LocalStorage)
     let products = JSON.parse(localStorage.getItem('pos_products')) || [
-      { id: 1, barcode: '8991001', name: 'Kopi Hitam', price: 5000, stock: 50 },
-      { id: 2, barcode: '8991002', name: 'Es Teh Manis', price: 3000, stock: 100 },
-      { id: 3, barcode: '8991003', name: 'Nasi Goreng', price: 15000, stock: 20 }
+      { id: 1, barcode: '8991001', name: 'Kopi Hitam', cost: 3000, price: 5000, stock: 50 },
+      { id: 2, barcode: '8991002', name: 'Es Teh Manis', cost: 1500, price: 3000, stock: 100 },
+      { id: 3, barcode: '8991003', name: 'Nasi Goreng', cost: 10000, price: 15000, stock: 20 }
     ];
 
     let cart = [];
@@ -359,7 +376,7 @@
     }
 
     function onScanSuccess(decodedText) {
-      playBeep(); // Bunyi Beep saat scan berhasil
+      playBeep();
       closeScannerModal();
 
       if (currentScannerTarget === 'kasir') {
@@ -386,7 +403,7 @@
 
         const product = products.find(p => p.barcode === query || p.name.toLowerCase() === query.toLowerCase());
         if (product) {
-          playBeep(); // Bunyi Beep saat scan fisik berhasil
+          playBeep();
           if (product.stock <= 0) {
             promptAddStock(product.id);
           } else {
@@ -562,6 +579,9 @@
       if (cart.length === 0) return alert('Keranjang masih kosong!');
 
       const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const totalCost = cart.reduce((sum, item) => sum + ((item.cost || 0) * item.qty), 0);
+      const profit = total - totalCost;
+
       const cash = parseFloat(document.getElementById('cash-amount').value) || 0;
 
       if (cash < total) return alert('Uang pembayaran kurang!');
@@ -573,6 +593,8 @@
         timestamp: now.getTime(),
         items: [...cart],
         total: total,
+        cost: totalCost,
+        profit: profit,
         cash: cash,
         change: cash - total
       };
@@ -628,6 +650,7 @@
       e.preventDefault();
       const barcode = document.getElementById('prod-barcode').value.trim();
       const name = document.getElementById('prod-name').value.trim();
+      const cost = parseFloat(document.getElementById('prod-cost').value) || 0;
       const price = parseFloat(document.getElementById('prod-price').value);
       const stock = parseInt(document.getElementById('prod-stock').value);
 
@@ -635,7 +658,7 @@
         return alert('Barcode ini sudah terdaftar pada produk lain!');
       }
 
-      const newProduct = { id: Date.now(), barcode, name, price, stock };
+      const newProduct = { id: Date.now(), barcode, name, cost, price, stock };
       products.push(newProduct);
 
       localStorage.setItem('pos_products', JSON.stringify(products));
@@ -665,7 +688,7 @@
       );
 
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-400">Tidak ada produk ditemukan</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400">Tidak ada produk ditemukan</td></tr>';
         return;
       }
 
@@ -679,7 +702,8 @@
             ${p.name}
             ${isOutOfStock ? '<span class="ml-2 text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.5 rounded">Habis</span>' : ''}
           </td>
-          <td class="p-2">${formatRupiah(p.price)}</td>
+          <td class="p-2 text-gray-500">${formatRupiah(p.cost || 0)}</td>
+          <td class="p-2 font-semibold text-gray-800">${formatRupiah(p.price)}</td>
           <td class="p-2">
             <span class="font-semibold ${isOutOfStock ? 'text-rose-600' : 'text-gray-800'}">${p.stock}</span>
           </td>
@@ -737,15 +761,27 @@
       filteredSales = list;
 
       if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400">Tidak ada data transaksi ditemukan</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-gray-400">Tidak ada data transaksi ditemukan</td></tr>';
         document.getElementById('total-omset').innerText = 'Rp 0';
+        document.getElementById('total-cost').innerText = 'Rp 0';
+        document.getElementById('total-profit').innerText = 'Rp 0';
         document.getElementById('total-count').innerText = '0';
         return;
       }
 
       let omset = 0;
+      let totalCost = 0;
+      let totalProfit = 0;
+
       list.forEach(s => {
+        // Fallback hitung modal dan laba jika data transaksi lama belum memiliki properti cost/profit
+        const trxCost = s.cost !== undefined ? s.cost : s.items.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0);
+        const trxProfit = s.profit !== undefined ? s.profit : (s.total - trxCost);
+
         omset += s.total;
+        totalCost += trxCost;
+        totalProfit += trxProfit;
+
         const itemsText = s.items.map(i => `${i.name} (${i.qty})`).join(', ');
         
         const tr = document.createElement('tr');
@@ -753,7 +789,9 @@
           <td class="p-2 font-medium">${s.id}</td>
           <td class="p-2 text-gray-500 text-xs">${s.date}</td>
           <td class="p-2">${itemsText}</td>
-          <td class="p-2 font-semibold text-indigo-600">${formatRupiah(s.total)}</td>
+          <td class="p-2 font-semibold text-gray-800">${formatRupiah(s.total)}</td>
+          <td class="p-2 text-gray-500">${formatRupiah(trxCost)}</td>
+          <td class="p-2 font-semibold text-emerald-600">${formatRupiah(trxProfit)}</td>
           <td class="p-2">${formatRupiah(s.cash)}</td>
           <td class="p-2">${formatRupiah(s.change)}</td>
         `;
@@ -761,6 +799,8 @@
       });
 
       document.getElementById('total-omset').innerText = formatRupiah(omset);
+      document.getElementById('total-cost').innerText = formatRupiah(totalCost);
+      document.getElementById('total-profit').innerText = formatRupiah(totalProfit);
       document.getElementById('total-count').innerText = list.length;
     }
 
@@ -769,10 +809,13 @@
 
       if (dataToExport.length === 0) return alert('Belum ada data penjualan untuk diexport!');
 
-      let csv = 'ID Transaksi,Waktu,Detail Item,Total,Bayar,Kembali\n';
+      let csv = 'ID Transaksi,Waktu,Detail Item,Total Omset,Total Modal,Laba Bersih,Bayar,Kembali\n';
       dataToExport.forEach(s => {
+        const trxCost = s.cost !== undefined ? s.cost : s.items.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0);
+        const trxProfit = s.profit !== undefined ? s.profit : (s.total - trxCost);
         const itemsText = s.items.map(i => `${i.name} (${i.qty})`).join('; ');
-        csv += `"${s.id}","${s.date}","${itemsText}",${s.total},${s.cash},${s.change}\n`;
+
+        csv += `"${s.id}","${s.date}","${itemsText}",${s.total},${trxCost},${trxProfit},${s.cash},${s.change}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
