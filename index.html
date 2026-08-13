@@ -2,32 +2,25 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <!-- Viewport disesuaikan untuk Android: mencegah zoom saat tap input -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kasir UMKM - Offline First Mini POS</title>
-  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Library Scan Barcode/QR via Kamera -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
-    /* CSS Khusus Optimasi Perangkat Mobile Android */
     body {
-      -webkit-tap-highlight-color: transparent; /* Menghilangkan highlight biru saat tap di Android */
+      -webkit-tap-highlight-color: transparent; 
     }
 
-    /* Mencegah auto-zoom browser Android pada input text/number */
     @media (max-width: 768px) {
       input, select, textarea {
         font-size: 16px !important;
       }
     }
 
-    /* Menyesuaikan area bawah untuk Gesture Navigation Bar Android */
     .pb-safe {
       padding-bottom: env(safe-area-inset-bottom, 1rem);
     }
 
-    /* Custom Scrollbar agar rapi di HP */
     ::-webkit-scrollbar {
       width: 4px;
       height: 4px;
@@ -36,17 +29,16 @@
       background: #cbd5e1;
       border-radius: 4px;
     }
-
   </style>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen flex flex-col justify-between">
 
   <!-- Header Navigasi Sticky -->
-  <header class="bg-indigo-600 text-white p-3 sm:p-4 shadow-md sticky top-0 z-40 no-print">
+  <header class="bg-indigo-600 text-white p-3 sm:p-4 shadow-md sticky top-0 z-40">
     <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
       <div class="flex items-center justify-between w-full sm:w-auto">
         <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2">
-          <span>🛒</span> Kasir UMKM
+          <span>🏷️</span> Kasir UMKM
         </h1>
       </div>
       <!-- Tab Bar Responsif Android -->
@@ -59,7 +51,7 @@
   </header>
 
   <!-- Konten Utama -->
-  <main class="container mx-auto p-2 sm:p-4 flex-1 no-print pb-safe">
+  <main class="container mx-auto p-2 sm:p-4 flex-1 pb-safe">
     
     <!-- TAB 1: HALAMAN KASIR -->
     <section id="page-kasir" class="flex flex-col lg:grid lg:grid-cols-3 gap-4">
@@ -103,7 +95,7 @@
               <span id="cash-change" class="font-semibold text-gray-700">Rp 0</span>
             </div>
             <button onclick="processCheckout()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition active:scale-98 text-sm sm:text-base shadow-sm">
-              Bayar
+              Selesaikan Transaksi
             </button>
           </div>
         </div>
@@ -149,7 +141,7 @@
         </form>
       </div>
 
-      <!-- Tabel Daftar Produk (Scrollable Horizontal di HP) -->
+      <!-- Tabel Daftar Produk -->
       <div class="lg:col-span-2 bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
           <h2 class="text-base sm:text-lg font-bold">Daftar Produk</h2>
@@ -254,8 +246,8 @@
     </section>
   </main>
 
-  <!-- MODAL SCANNER KAMERA (Optimized untuk Mobile) -->
-  <div id="scanner-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-3 no-print">
+  <!-- MODAL SCANNER KAMERA -->
+  <div id="scanner-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-3">
     <div class="bg-white p-4 rounded-2xl max-w-sm w-full space-y-3 text-center shadow-2xl">
       <h3 class="text-base font-bold text-gray-800">Scan Barcode / QR Code</h3>
       <div id="reader" class="overflow-hidden rounded-xl bg-black min-h-[220px]"></div>
@@ -266,9 +258,7 @@
     </div>
   </div>
 
-  <!-- SCRIPT LOGIKA APLIKASI -->
   <script>
-    // Initial State Data (Offline-First menggunakan LocalStorage)
     let products = JSON.parse(localStorage.getItem('pos_products')) || [
       { id: 1, barcode: '8991001', name: 'Kopi Hitam', cost: 3000, price: 5000, stock: 50 },
       { id: 2, barcode: '8991002', name: 'Es Teh Manis', cost: 1500, price: 3000, stock: 100 },
@@ -281,7 +271,6 @@
     let html5QrcodeScanner = null;
     let currentScannerTarget = 'kasir';
 
-    // --- FUNGSI SUARA BEEP ---
     function playBeep() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -302,12 +291,10 @@
       }
     }
 
-    // Format Rupiah
     function formatRupiah(amount) {
       return 'Rp ' + amount.toLocaleString('id-ID');
     }
 
-    // Tab Navigation
     function switchTab(tabName) {
       ['kasir', 'produk', 'rekap'].forEach(tab => {
         document.getElementById(`page-${tab}`).classList.add('hidden');
@@ -321,7 +308,6 @@
       if (tabName === 'rekap') renderSalesTable();
     }
 
-    // --- LOGIKA SCANNER KAMERA BARCODE ---
     function openScannerModal(target) {
       currentScannerTarget = target;
       document.getElementById('scanner-modal').classList.remove('hidden');
@@ -393,7 +379,6 @@
       }
     }
 
-    // --- LOGIKA KASIR ---
     function renderProducts() {
       const search = document.getElementById('search-product').value.toLowerCase();
       const container = document.getElementById('product-list');
@@ -584,7 +569,7 @@
       localStorage.setItem('pos_products', JSON.stringify(products));
       localStorage.setItem('pos_sales', JSON.stringify(sales));
 
-      printReceipt(transaction);
+      alert('Transaksi Berhasil!');
 
       cart = [];
       document.getElementById('cash-amount').value = '';
@@ -592,32 +577,6 @@
       renderProducts();
     }
 
-    function printReceipt(trx) {
-      document.getElementById('rec-id').innerText = trx.id;
-      document.getElementById('rec-date').innerText = trx.date;
-      document.getElementById('rec-total').innerText = formatRupiah(trx.total);
-      document.getElementById('rec-cash').innerText = formatRupiah(trx.cash);
-      document.getElementById('rec-change').innerText = formatRupiah(trx.change);
-
-      const itemsContainer = document.getElementById('rec-items');
-      itemsContainer.innerHTML = '';
-      trx.items.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'flex justify-between';
-        row.innerHTML = `
-          <span>${item.name} x${item.qty}</span>
-          <span>${formatRupiah(item.price * item.qty)}</span>
-        `;
-        itemsContainer.appendChild(row);
-      });
-
-      const printEl = document.getElementById('receipt-print');
-      printEl.classList.remove('hidden');
-      window.print();
-      printEl.classList.add('hidden');
-    }
-
-    // --- LOGIKA PRODUK ---
     function saveProduct(e) {
       e.preventDefault();
       const barcode = document.getElementById('prod-barcode').value.trim();
@@ -692,7 +651,6 @@
       });
     }
 
-    // --- LOGIKA REKAP PENJUALAN ---
     function applyDateFilter() {
       const startInput = document.getElementById('filter-start-date').value;
       const endInput = document.getElementById('filter-end-date').value;
